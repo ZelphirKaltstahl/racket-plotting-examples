@@ -47,57 +47,6 @@
 (debug-print (list "a" "b" "c" "d") #:sep " " #:end "\n")
 (debug-print (list "a" "b" "c" "d"))
 
-;; another zip solution
-;(define (zip l1 l2)
-;    (cond ((null? l1) l2)
-;          ((null? l2) l1)
-;          (else (cons ??? (cons ??? (zip ??? ???))))))
-
-; (define (square x)
-;     (* x x))
-; 
-; ;; #:bgcolor, #:fgcolor, #:height, #:legend-anchor, #:lncolor, #:out-file, #:out-kind, #:title, #:width, #:x-label, #:x-max, #:x-min, #:y-label, #:y-max, and #:y-min
-(parameterize
-    ([plot-width 600]
-    [plot-height 400]
-    [plot-x-label "x"]
-    [plot-y-label "sin"]
-    [plot-new-window? true])
-; 
-;     (plot
-;         (list
-;             (function sin (- 4) 4 #:label "y = sin(x)" #:color (- (random 1 128) 1))
-;             (function cos (- 4) 4 #:label "y = cos(x)" #:color (- (random 1 128) 1))
-;             (function tan (- 4) 4 #:label "y = tan(x)" #:color (- (random 1 128) 1))
-;             (function square (- 4) 4 #:label "y = x²" #:color (- (random 1 128) 1)))
-;         #:title "Functions"
-;         #:x-min (- 4)
-;         #:x-max 4
-;         #:y-min (- 4)
-;         #:y-max 4
-;         #:out-file "square.pdf")
-; 
-    (plot
-        (list
-            (discrete-histogram
-                (list #(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5))
-                #:skip 2.5
-                #:x-min 0
-                #:label "AMD")
-            (discrete-histogram
-                (list #(Eggs 1.4) #(Bacon 2.3) #(Pancakes 3.1))
-                #:skip 2.5
-                #:x-min 1
-                #:label "Intel"
-                #:color 2
-                #:line-color 2))
-
-        #:x-label "Breakfast Food"
-        #:y-label "Cooking Time (minutes)"
-        #:title "Cooking Times For Breakfast Food, Per Processor"
-        #:out-file "bar-chart.png"))
-
-
 (define (read-rows-from-csv csv-file-path)
   (define next-row
     (make-csv-reader
@@ -120,7 +69,10 @@
                              (random-color))]
           [a-color (random-color)])
          (discrete-histogram a-vector-list
-                             #:skip 3.2
+                             ;; skip is how much space is in between starts of groups of bars
+                             #:skip 3.3
+                             ;; x-min is the starting point for positioning the bars
+                             ;; if all x-mins are equal, they will be stacked (stacked bar chart)
                              #:x-min x-min
                              #:label label
                              #:color a-color
@@ -186,8 +138,49 @@
   ;; start with the empty list
   (reverse (array-iter an-array nil)))
 
-(plot-bar-chart
-  (convert-to-vector-lists
-    (read-rows-from-csv "sheet.csv")
-    (list "A" "B" "C" "D"))
-  (list "row1" "row2" "row3"))
+(define (get-column-labels csv-content)
+  (cdar csv-content))
+
+(define (get-row-labels csv-content)
+  (define (iter remaining-rows row-labels)
+    (cond
+      [(empty? remaining-rows) row-labels]
+      [else (iter (cdr remaining-rows) (cons (caar remaining-rows) row-labels))]))
+
+  (reverse (iter (cdr csv-content) nil)))
+
+(define (remove-labels csv-content)
+  (define (remove-col-labels csv-content)
+    (cdr csv-content))
+
+  (define (remove-row-labels csv-content result)
+    (cond
+      [(empty? csv-content) result]
+      [else
+        (remove-row-labels (cdr csv-content)
+                           (cons (cdar csv-content) result))]))
+
+  (reverse (remove-row-labels (remove-col-labels csv-content) nil)))
+
+(get-column-labels (list (list "" "a" "b" "c" "d")
+                         (list "row1" 0 1 2 3)
+                         (list "row2" 4 5 6 7)
+                         (list "row3" 8 9 10 11)))
+
+(get-row-labels (list (list "" "a" "b" "c" "d")
+                      (list "row1" 0 1 2 3)
+                      (list "row2" 4 5 6 7)
+                      (list "row3" 8 9 10 11)))
+
+(remove-labels (list (list "" "a" "b" "c" "d")
+                     (list "row1" 0 1 2 3)
+                     (list "row2" 4 5 6 7)
+                     (list "row3" 8 9 10 11)))
+
+(define (plot csv-file-path)
+  (let*
+    ([csv-content (read-rows-from-csv csv-file-path)]
+     [column-labels (get-column-labels csv-content)]
+     [row-labels (get-row-labels csv-content)]
+     [raw-data (remove-labels csv-content)])
+    (plot-bar-chart (convert-to-vector-lists raw-data column-labels) row-labels)))
