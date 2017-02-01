@@ -57,12 +57,12 @@
 ;     (* x x))
 ; 
 ; ;; #:bgcolor, #:fgcolor, #:height, #:legend-anchor, #:lncolor, #:out-file, #:out-kind, #:title, #:width, #:x-label, #:x-max, #:x-min, #:y-label, #:y-max, and #:y-min
-; (parameterize
-;     ([plot-width 600]
-;     [plot-height 400]
-;     [plot-x-label "x"]
-;     [plot-y-label "sin"]
-;     [plot-new-window? true])
+(parameterize
+    ([plot-width 600]
+    [plot-height 400]
+    [plot-x-label "x"]
+    [plot-y-label "sin"]
+    [plot-new-window? true])
 ; 
 ;     (plot
 ;         (list
@@ -77,25 +77,25 @@
 ;         #:y-max 4
 ;         #:out-file "square.pdf")
 ; 
-;     (plot
-;         (list
-;             (discrete-histogram
-;                 (list #(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5))
-;                 #:skip 2.5
-;                 #:x-min 0
-;                 #:label "AMD")
-;             (discrete-histogram
-;                 (list #(Eggs 1.4) #(Bacon 2.3) #(Pancakes 3.1))
-;                 #:skip 2.5
-;                 #:x-min 1
-;                 #:label "Intel"
-;                 #:color 2
-;                 #:line-color 2))
-; 
-;         #:x-label "Breakfast Food"
-;         #:y-label "Cooking Time (minutes)"
-;         #:title "Cooking Times For Breakfast Food, Per Processor"
-;         #:out-file "bar-chart.png"))
+    (plot
+        (list
+            (discrete-histogram
+                (list #(Eggs 1.5) #(Bacon 2.5) #(Pancakes 3.5))
+                #:skip 2.5
+                #:x-min 0
+                #:label "AMD")
+            (discrete-histogram
+                (list #(Eggs 1.4) #(Bacon 2.3) #(Pancakes 3.1))
+                #:skip 2.5
+                #:x-min 1
+                #:label "Intel"
+                #:color 2
+                #:line-color 2))
+
+        #:x-label "Breakfast Food"
+        #:y-label "Cooking Time (minutes)"
+        #:title "Cooking Times For Breakfast Food, Per Processor"
+        #:out-file "bar-chart.png"))
 
 
 (define (read-rows-from-csv csv-file-path)
@@ -114,12 +114,20 @@
 
 
 (define (plot-bar-chart vector-lists labels)
-  (define (create-discrete-histogram a-vector-list label)
-    (let ([a-color (random-color)])
-         (discrete-histogram a-vector-list #:skip 2.5 #:x-min 0 #:label label #:color a-color #:line-color a-color)))
+  (define (create-discrete-histogram a-vector-list label x-min)
+    (let ([a-rgb-color (list (random-color)
+                             (random-color)
+                             (random-color))]
+          [a-color (random-color)])
+         (discrete-histogram a-vector-list
+                             #:skip 3.2
+                             #:x-min x-min
+                             #:label label
+                             #:color a-color
+                             #:line-color a-color)))
 
   ;; procedure for building the list of vectors for the plot
-  (define (iter sub-vector-lists sub-label-list result-list)
+  (define (iter sub-vector-lists sub-label-list result-list nth-row)
     (cond
       [(empty? sub-vector-lists) result-list]
       [else
@@ -131,12 +139,14 @@
             (cdr sub-vector-lists)
             (cdr sub-label-list)
             (cons (create-discrete-histogram current-vector-list
-                                             current-label)
-                  result-list)))]))
+                                             current-label
+                                             nth-row)
+                  result-list)
+            (+ nth-row 1)))]))
 
 
-  (display (get-type (iter vector-lists labels nil))) (newline)
-  (display (iter vector-lists labels nil)) (newline)
+  (display (get-type (iter vector-lists labels nil 0))) (newline)
+  (display (iter vector-lists labels nil 0)) (newline)
   (time (parameterize
     ([plot-width 600]
      [plot-height 400]
@@ -144,7 +154,7 @@
      [plot-y-label "sin"]
      [plot-new-window? false])
 
-     (plot (reverse (iter vector-lists labels nil))
+     (plot (iter vector-lists labels nil 0)
            #:x-label "attributes"
            #:y-label "count"
            #:title "test"
@@ -169,7 +179,7 @@
                   (cond [(not current-element) nil]
                         [else (row-iter (cdr current-subrow)
                                         (cdr labels)
-                                        (cons (vector (car labels) current-element) result-row))])))]
+                                        (cons (vector (string->symbol (car labels)) current-element) result-row))])))]
           [else
             (display "labels and row length not equal")(newline)
             (exit)]))
