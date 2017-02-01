@@ -4,8 +4,14 @@
          plot
          csv-reading)
 
+(define (Mb-to-B n) (* n 1024 1024))
+(define MAX-BYTES (Mb-to-B 64))
+(custodian-limit-memory (current-custodian) MAX-BYTES)
+
 (define nil (list))
 (define != (lambda (a b) (not (= a b))))
+(define <> (lambda (a b) (not (= a b))))
+(define unequal (lambda (a b) (not (= a b))))
 (define zip (lambda (l1 l2) (map list l1 l2)))
 
 ;; https://lists.racket-lang.org/users/archive/2014-September/064203.html
@@ -27,13 +33,18 @@
   (lambda ()
     (- (random 1 128) 1)))
 
-;(define (debug-print string-list)
-;  (define (iter sublist last-character)
-;    (cond
-;      [(empty? sublist) (consequent1)]
-;      [(predicate2) (consequent2)]
-;      [else (consequent3)]))
-;  ())
+(define (debug-print string-list #:sep sep #:end end)
+  (define (iter remaining-strings result-string)
+    (cond
+      [(empty? remaining-strings)
+        (string-append result-string end)]
+      [else
+        (iter
+          (cdr remaining-strings)
+          (string-append result-string (car remaining-strings)))]))
+  (display (iter string-list "")))
+
+(debug-print (list "a" "b" "c" "d") #:sep " " #:end "\n")
 
 ;; another zip solution
 ;(define (zip l1 l2)
