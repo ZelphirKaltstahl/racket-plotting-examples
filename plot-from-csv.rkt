@@ -33,7 +33,7 @@
   (lambda ()
     (- (random 1 128) 1)))
 
-(define (debug-print string-list #:sep sep #:end end)
+(define (debug-print string-list #:sep [sep " "] #:end [end "\n"])
   (define (iter remaining-strings result-string)
     (cond
       [(empty? remaining-strings)
@@ -45,6 +45,7 @@
   (display (iter string-list "")))
 
 (debug-print (list "a" "b" "c" "d") #:sep " " #:end "\n")
+(debug-print (list "a" "b" "c" "d"))
 
 ;; another zip solution
 ;(define (zip l1 l2)
